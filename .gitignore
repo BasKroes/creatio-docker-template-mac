@@ -5,7 +5,7 @@
 .env.*.local
 
 # Creatio application files (download from partner portal)
-creatio-app/*
+#creatio-app/*
 #creatio-app/Dockerfile
 #creatio-app/ConnectionStrings.config
 !creatio-app/.gitkeep
