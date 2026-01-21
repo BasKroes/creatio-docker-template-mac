@@ -1,0 +1,49 @@
+# Creatio Docker .gitignore
+
+# Local environment overrides
+.env.local
+.env.*.local
+
+# Creatio application files (download from partner portal)
+creatio-app/*
+#creatio-app/Dockerfile
+#creatio-app/ConnectionStrings.config
+!creatio-app/.gitkeep
+
+# Database backups
+*.backup
+*.sql.gz
+*.dump
+
+# Logs
+logs/
+*.log
+
+# Docker volumes (if using bind mounts)
+postgres_data/
+redis_data/
+
+# Mac files
+.DS_Store
+._*
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Credentials and secrets
+*.pem
+*.key
+*.pfx
+secrets/
+
+# Local development
+node_modules/
+.npm/
