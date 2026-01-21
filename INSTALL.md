@@ -31,20 +31,7 @@ Step-by-step instructions to get Creatio running on your Mac from scratch.
    ```
    Both commands should show version numbers.
 
-## Step 2: Create a GitHub Personal Access Token
-
-You need this to pull the Creatio container image from our private registry.
-
-1. Go to: https://github.com/settings/tokens
-2. Click **"Generate new token (classic)"**
-3. Settings:
-   - **Note**: "Creatio Docker"
-   - **Expiration**: 90 days (or longer)
-   - **Scopes**: Check `read:packages`
-4. Click **Generate token**
-5. **Copy the token immediately** (you won't see it again!)
-
-## Step 3: Set Up the Project Folder
+## Step 2: Set Up the Project Folder
 
 1. **Create a folder for Docker projects**:
    ```bash
@@ -66,17 +53,7 @@ You need this to pull the Creatio container image from our private registry.
    cd ~/Docker/creatio-docker
    ```
 
-## Step 4: Login to GitHub Container Registry
-
-Open Terminal and run (replace `YOUR_GITHUB_USERNAME` and `YOUR_TOKEN`):
-
-```bash
-echo "YOUR_TOKEN" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
-```
-
-You should see: `Login Succeeded`
-
-## Step 5: Pull the Creatio Image
+## Step 3: Pull the Creatio Image
 
 ```bash
 docker pull ghcr.io/baskroes/creatio:8.3.2
@@ -84,7 +61,7 @@ docker pull ghcr.io/baskroes/creatio:8.3.2
 
 This downloads the pre-built Creatio container (~3GB, may take a few minutes).
 
-## Step 6: Update docker-compose.yml to Use the Image
+## Step 4: Update docker-compose.yml to Use the Image
 
 Edit `docker-compose.yml` and change the creatio service to use the pulled image:
 
@@ -103,7 +80,7 @@ Edit `docker-compose.yml` and change the creatio service to use the pulled image
     # ... rest stays the same
 ```
 
-## Step 7: Get the Database Backup
+## Step 5: Get the Database Backup
 
 You need the Creatio database backup file. Get it from:
 - Team shared drive, OR
@@ -115,7 +92,7 @@ mkdir -p ~/Docker/creatio-docker/db-backup
 cp /path/to/creatio.backup ~/Docker/creatio-docker/db-backup/
 ```
 
-## Step 8: Start the Services
+## Step 6: Start the Services
 
 ```bash
 cd ~/Docker/creatio-docker
@@ -135,7 +112,7 @@ docker compose ps
 
 You should see `creatio-postgres` and `creatio-redis` with status `running (healthy)`.
 
-## Step 9: Restore the Database
+## Step 7: Restore the Database
 
 ```bash
 ./restore-db.sh ~/Docker/creatio-docker/db-backup/creatio.backup
@@ -148,7 +125,7 @@ This takes 2-5 minutes. You'll see progress messages and finally:
 =========================================
 ```
 
-## Step 10: Start Creatio
+## Step 8: Start Creatio
 
 ```bash
 docker compose up -d creatio
@@ -163,7 +140,7 @@ Look for: `Application started`
 
 Press `Ctrl+C` to exit the logs.
 
-## Step 11: Access Creatio
+## Step 9: Access Creatio
 
 Open your browser and go to:
 
@@ -199,10 +176,6 @@ docker compose down -v
 
 ### "Cannot connect to Docker daemon"
 - Make sure Docker Desktop is running (check for the whale icon in the menu bar)
-
-### "Login Succeeded" but pull fails with "unauthorized"
-- Check that your GitHub token has `read:packages` scope
-- Verify you're using the correct username
 
 ### Login page keeps redirecting back
 - Clear browser cookies for localhost
