@@ -7,7 +7,8 @@ set -e
 BACKUP_FILE=$1
 
 if [ -z "$BACKUP_FILE" ]; then
-    echo "Usage: ./restore-db.sh /path/to/backup.backup"
+    echo "Usage: ./restore-db.sh creatio-app/db
+/BPMonline832SalesEnterprise_Marketing_ServiceEnterpriseNet8.backup"
     echo ""
     echo "This script restores a Creatio PostgreSQL database backup."
     echo "The backup file should be the .backup file from your Creatio distribution."
@@ -36,13 +37,13 @@ fi
 # Drop and recreate the database
 echo "Recreating database..."
 docker compose exec -T postgres psql -U postgres -c "DROP DATABASE IF EXISTS creatio_db;" || true
-docker compose exec -T postgres psql -U postgres -c "CREATE DATABASE creatio_db WITH OWNER = pg_user ENCODING = 'UTF8' CONNECTION LIMIT = -1;"
+docker compose exec -T postgres psql -U postgres -c "CREATE DATABASE creatio_db WITH OWNER = creatio_user ENCODING = 'UTF8' CONNECTION LIMIT = -1;"
 
 # Restore the backup
 echo ""
 echo "Restoring backup (this may take a few minutes)..."
 docker compose exec -T postgres pg_restore \
-    -U pg_sysadmin \
+    -U creatio_admin \
     -d creatio_db \
     --no-owner \
     --no-privileges \
@@ -59,34 +60,19 @@ if [ ! -f "CreateTypeCastsPostgreSql.sql" ]; then
     curl -sL "https://academy.creatio.com/sites/academy_en/files/sql/PostgreSQL/CreateTypeCastsPostgreSql.sql" -o CreateTypeCastsPostgreSql.sql
 fi
 
-docker compose exec -T postgres psql -U pg_sysadmin -d creatio_db < CreateTypeCastsPostgreSql.sql
+docker compose exec -T postgres psql -U creatio_admin -d creatio_db < CreateTypeCastsPostgreSql.sql
 
-# Fix ownership
+# Fix ownership - reassign all objects owned by postgres/creatio_admin to creatio_user
 echo ""
 echo "Fixing database ownership..."
-docker compose exec -T postgres psql -U pg_sysadmin -d creatio_db -c "
-DO \$\$ 
-DECLARE 
-    r RECORD;
-BEGIN
-    FOR r IN SELECT tablename FROM pg_tables WHERE schemaname = 'public'
-    LOOP
-        EXECUTE 'ALTER TABLE public.' || quote_ident(r.tablename) || ' OWNER TO pg_user';
-    END LOOP;
-END \$\$;
-"
+docker compose exec -T postgres psql -U postgres -d creatio_db -c "REASSIGN OWNED BY postgres TO creatio_user;" || true
+docker compose exec -T postgres psql -U postgres -d creatio_db -c "REASSIGN OWNED BY creatio_admin TO creatio_user;" || true
 
-docker compose exec -T postgres psql -U pg_sysadmin -d creatio_db -c "
-DO \$\$ 
-DECLARE 
-    r RECORD;
-BEGIN
-    FOR r IN SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public'
-    LOOP
-        EXECUTE 'ALTER SEQUENCE public.' || quote_ident(r.sequence_name) || ' OWNER TO pg_user';
-    END LOOP;
-END \$\$;
-"
+# Grant all privileges to creatio_user
+echo "Granting privileges..."
+docker compose exec -T postgres psql -U postgres -d creatio_db -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO creatio_user;"
+docker compose exec -T postgres psql -U postgres -d creatio_db -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO creatio_user;"
+docker compose exec -T postgres psql -U postgres -d creatio_db -c "GRANT ALL PRIVILEGES ON SCHEMA public TO creatio_user;"
 
 echo ""
 echo "========================================="

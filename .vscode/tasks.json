@@ -1,0 +1,134 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Clio: List Packages",
+      "type": "shell",
+      "command": "clio packages",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Clio: Pull Package",
+      "type": "shell",
+      "command": "clio pull-pkg ${input:packageName} -d ./src/${input:packageName}",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Clio: Push Package",
+      "type": "shell",
+      "command": "clio push-pkg ./src/${input:packageName}",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Clio: Compile All",
+      "type": "shell",
+      "command": "clio compile",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Clio: Restart Creatio",
+      "type": "shell",
+      "command": "clio restart",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Clio: Ping (Test Connection)",
+      "type": "shell",
+      "command": "clio ping",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Clio: Flush Redis Cache",
+      "type": "shell",
+      "command": "clio flushdb",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Clio: Generate Models",
+      "type": "shell",
+      "command": "clio generate-models -p ${input:packageName} -d ./src/${input:packageName}",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Docker: Start All",
+      "type": "shell",
+      "command": "docker compose up -d",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Docker: Stop All",
+      "type": "shell",
+      "command": "docker compose down",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Docker: View Creatio Logs",
+      "type": "shell",
+      "command": "docker compose logs -f creatio",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "isBackground": true
+    },
+    {
+      "label": "Docker: Restart Creatio Container",
+      "type": "shell",
+      "command": "docker compose restart creatio",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "packageName",
+      "description": "Enter the Creatio package name",
+      "type": "promptString",
+      "default": "UsrMyPackage"
+    }
+  ]
+}

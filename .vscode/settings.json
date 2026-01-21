@@ -1,0 +1,44 @@
+{
+  // Creatio Development Settings
+  "editor.formatOnSave": true,
+  "editor.tabSize": 4,
+  "editor.insertSpaces": false,
+
+  // File associations for Creatio
+  "files.associations": {
+    "*.config": "xml",
+    "*.csproj": "xml"
+  },
+
+  // Exclude from file explorer
+  "files.exclude": {
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/*.pyc": true
+  },
+
+  // Search exclusions
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/logs": true,
+    "**/*.backup": true
+  },
+
+  // C# settings
+  "dotnet.defaultSolution": "src/**/*.sln",
+  "omnisharp.enableRoslynAnalyzers": true,
+
+  // JavaScript/TypeScript settings (for Freedom UI)
+  "javascript.preferences.quoteStyle": "double",
+  "typescript.preferences.quoteStyle": "double",
+
+  // Terminal settings
+  "terminal.integrated.cwd": "${workspaceFolder}",
+
+  // Docker settings
+  "docker.containers.label": "creatio",
+
+  // Recommended: Auto-save for faster development
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000
+}

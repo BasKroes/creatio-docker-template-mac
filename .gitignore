@@ -15,8 +15,9 @@ creatio-app/*
 *.sql.gz
 *.dump
 
-# Logs
-logs/
+# Logs (keep the folder, ignore contents)
+logs/*
+!logs/.gitkeep
 *.log
 
 # Docker volumes (if using bind mounts)
@@ -29,9 +30,14 @@ redis_data/
 
 # IDE files
 .idea/
-.vscode/
+# Keep .vscode for shared settings
+!.vscode/
 *.swp
 *.swo
+
+# Source packages (pulled via Clio)
+src/*
+!src/.gitkeep
 
 # Temporary files
 tmp/

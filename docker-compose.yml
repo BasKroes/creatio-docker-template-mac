@@ -3,12 +3,16 @@ version: '3.8'
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15
+    image: postgres:16
     container_name: creatio-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
+    command: >
+      postgres
+      -c max_locks_per_transaction=256
+      -c shared_buffers=256MB
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
@@ -46,22 +50,19 @@ services:
       dockerfile: Dockerfile
     container_name: creatio-app
     ports:
-      - "5000:5000"
-      - "5002:5002"
+      - "8080:5000"
+      - "8443:5002"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5000
       - TZ=Europe/Amsterdam
+    volumes:
+      - ./logs:/app/Logs
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      # Mount for development - allows live changes
-      - ./creatio-app:/app
-      # Persist logs
-      - ./logs:/app/Logs
     networks:
       - creatio-network
     restart: unless-stopped

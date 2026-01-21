@@ -1,0 +1,30 @@
+{
+  "recommendations": [
+    // C# Development
+    "ms-dotnettools.csharp",
+    "ms-dotnettools.csdevkit",
+
+    // JavaScript/TypeScript (Freedom UI)
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+
+    // Docker
+    "ms-azuretools.vscode-docker",
+
+    // Git
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+
+    // XML (for config files)
+    "redhat.vscode-xml",
+
+    // SQL (for database work)
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg",
+
+    // Productivity
+    "christian-kohler.path-intellisense",
+    "usernamehw.errorlens",
+    "gruntfuggly.todo-tree"
+  ]
+}

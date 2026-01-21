@@ -1,6 +1,6 @@
 # Creatio 8.3.2 Docker Development Environment
 
-Local development setup for Creatio 8.3.2 on Mac (Intel) using Docker with PostgreSQL and Redis.
+Local development setup for Creatio 8.3.2 on Mac using Docker with PostgreSQL and Redis.
 
 ## Prerequisites
 
@@ -11,7 +11,7 @@ Local development setup for Creatio 8.3.2 on Mac (Intel) using Docker with Postg
 
 2. **Creatio 8.3.2 Distribution Files**
    - Log into Creatio Partner Portal
-   - Download the Linux/.NET version (NOT Windows/IIS)
+   - Download the Linux/.NET 8 version (NOT Windows/IIS)
    - File pattern: `Creatio_*_Linux_PostgreSQL_*.zip`
 
 3. **Creatio License** (obtain from partner portal)
@@ -19,21 +19,48 @@ Local development setup for Creatio 8.3.2 on Mac (Intel) using Docker with Postg
 ## Quick Start
 
 ```bash
-# 1. Clone/copy this folder to your dev machine
+# 1. Copy this template folder
+cp -r creatio-docker-template-mac creatio-docker
 cd creatio-docker
 
-# 2. Extract Creatio distribution files
+# 2. Extract Creatio distribution files into creatio-app/
 unzip /path/to/Creatio_8.3.2_Linux_PostgreSQL_*.zip -d creatio-app/
 
-# 3. Make scripts executable
+# 3. Apply required config changes (IMPORTANT!)
+# Change cookie SameSite mode from "None" to "Lax" for HTTP development:
+sed -i '' 's/CookiesSameSiteMode" value="None"/CookiesSameSiteMode" value="Lax"/' creatio-app/Terrasoft.WebHost.dll.config
+
+# 4. Make scripts executable
 chmod +x setup.sh restore-db.sh
 
-# 4. Run setup
-./setup.sh
+# 5. Start PostgreSQL and Redis first
+docker compose up -d postgres redis
 
-# 5. Restore the database (from your Creatio distribution)
+# 6. Wait for services to be healthy, then restore database
 ./restore-db.sh creatio-app/db/*.backup
+
+# 7. Start Creatio
+docker compose up -d creatio
 ```
+
+## Required Configuration Changes
+
+After extracting Creatio files, you MUST apply these changes:
+
+### 1. Cookie SameSite Mode (Required for HTTP)
+In `creatio-app/Terrasoft.WebHost.dll.config`, change:
+```xml
+<add key="CookiesSameSiteMode" value="None" />
+```
+To:
+```xml
+<add key="CookiesSameSiteMode" value="Lax" />
+```
+
+This is required because `SameSite=None` requires HTTPS. Without this change, you'll be able to log in but immediately redirected back to the login page.
+
+### 2. ConnectionStrings.config (Already configured)
+The template includes a pre-configured `ConnectionStrings.config` that uses Docker service names for PostgreSQL and Redis connections.
 
 ## Folder Structure
 
@@ -43,36 +70,36 @@ creatio-docker/
 ├── init-db.sql             # PostgreSQL initialization
 ├── setup.sh                # Main setup script
 ├── restore-db.sh           # Database restore script
-├── logs/                   # Creatio application logs
 └── creatio-app/            # <- Extract Creatio files here
-    ├── Dockerfile
-    ├── ConnectionStrings.config
-    ├── Terrasoft.WebHost.dll
-    ├── appsettings.json
-    ├── db/                 # Database backup files
-    └── ...                 # Other Creatio files
+    ├── Dockerfile          # (from template)
+    ├── ConnectionStrings.config  # (from template)
+    ├── Terrasoft.WebHost.dll     # (from Creatio)
+    ├── Terrasoft.WebHost.dll.config  # (from Creatio - needs editing)
+    ├── appsettings.json          # (from Creatio)
+    ├── db/                       # Database backup files
+    └── ...                       # Other Creatio files
 ```
 
 ## Services & Ports
 
-| Service    | Port  | Description                |
-|------------|-------|----------------------------|
-| Creatio    | 5000  | HTTP application server    |
-| Creatio    | 5002  | HTTPS (if configured)      |
-| PostgreSQL | 5432  | Database                   |
-| Redis      | 6379  | Caching                    |
+| Service    | Internal Port | External Port | Description                |
+|------------|---------------|---------------|----------------------------|
+| Creatio    | 5000          | 8080          | HTTP application server    |
+| Creatio    | 5002          | 8443          | HTTPS (if configured)      |
+| PostgreSQL | 5432          | 5432          | Database                   |
+| Redis      | 6379          | 6379          | Caching                    |
 
 ## Default Credentials
 
 ### Creatio Application
-- **URL**: http://localhost:5000
+- **URL**: http://localhost:8080
 - **Username**: Supervisor
 - **Password**: Supervisor
-- ⚠️ **Change immediately after first login!**
 
 ### PostgreSQL
-- **Sysadmin**: `pg_sysadmin` / `SysAdmin123!`
-- **Application**: `pg_user` / `CreatioUser123!`
+- **Superuser**: `postgres` / `postgres`
+- **Admin**: `creatio_admin` / `SysAdmin123!`
+- **Application**: `creatio_user` / `CreatioUser123!`
 - **Database**: `creatio_db`
 
 ## Common Commands
@@ -89,11 +116,11 @@ docker compose logs -f              # All services
 docker compose logs -f creatio      # Creatio only
 docker compose logs -f postgres     # PostgreSQL only
 
-# Restart Creatio after code changes
+# Restart Creatio after config changes
 docker compose restart creatio
 
 # Access PostgreSQL CLI
-docker compose exec postgres psql -U pg_user -d creatio_db
+docker compose exec postgres psql -U creatio_user -d creatio_db
 
 # Access Redis CLI
 docker compose exec redis redis-cli
@@ -103,108 +130,67 @@ docker compose build --no-cache creatio
 docker compose up -d creatio
 ```
 
-## Development Workflow
-
-### Using Clio (Recommended)
-
-Install Clio for package development:
-
-```bash
-# Install Clio globally
-dotnet tool install clio -g
-
-# Register your local environment
-clio reg-web-app local -u http://localhost:5000 -l Supervisor -p Supervisor
-
-# Set as default
-clio set local
-
-# Common Clio commands
-clio packages                    # List packages
-clio pull-pkg MyPackage          # Download package for editing
-clio push-pkg MyPackage          # Push changes
-clio restart                     # Restart Creatio app
-clio compile                     # Compile all
-```
-
-### Hot Reload for Frontend
-
-For frontend (JavaScript/CSS) changes, you can mount the package folder:
-
-1. Pull your package locally: `clio pull-pkg MyPackage`
-2. Edit files in the mounted volume
-3. Refresh browser to see changes (no compile needed for JS/CSS)
-
-### Backend Development
-
-For C# changes:
-1. Make changes in your package
-2. Push with Clio: `clio push-pkg MyPackage`
-3. Compile: `clio compile`
-
 ## Troubleshooting
 
-### Creatio won't start
-```bash
-# Check logs
-docker compose logs creatio
+### Login redirects back to login page
+This is caused by cookie issues. Ensure you've changed `CookiesSameSiteMode` from `None` to `Lax` in `Terrasoft.WebHost.dll.config`.
 
-# Common issues:
-# - Database not ready: Wait for PostgreSQL to fully start
-# - Connection string error: Verify ConnectionStrings.config
-# - License issue: Ensure license is activated
+### .NET version mismatch error
+If you see errors about .NET 6.0 vs 8.0:
+- The Dockerfile removes bundled .NET runtime (`/app/dotnet`, `/app/shared`)
+- Ensure you're using `mcr.microsoft.com/dotnet/aspnet:8.0` base image
+
+### Database "relation does not exist" error
+The database backup hasn't been restored. Run:
+```bash
+./restore-db.sh creatio-app/db/*.backup
 ```
 
-### Database connection failed
+### Permission denied for table
+Database permissions weren't set correctly. Run:
 ```bash
-# Verify PostgreSQL is running
-docker compose ps postgres
-
-# Test connection
-docker compose exec postgres pg_isready
-
-# Check PostgreSQL logs
-docker compose logs postgres
+docker compose exec postgres psql -U postgres -d creatio_db -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO creatio_user;"
+docker compose exec postgres psql -U postgres -d creatio_db -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO creatio_user;"
+docker compose exec postgres psql -U postgres -d creatio_db -c "GRANT ALL PRIVILEGES ON SCHEMA public TO creatio_user;"
 ```
 
-### Redis connection failed
+### Out of shared memory during restore
+PostgreSQL ran out of lock memory. The docker-compose.yml includes `max_locks_per_transaction=256` to prevent this. If still happening, increase this value.
+
+### Container name conflicts
+Remove old containers:
 ```bash
-# Verify Redis is running
-docker compose exec redis redis-cli ping
-# Should return: PONG
+docker rm -f creatio-postgres creatio-redis creatio-app
+docker compose up -d
 ```
 
-### Permission errors on Mac
-```bash
-# Fix volume permissions
-chmod -R 755 creatio-app/
-chmod -R 777 logs/
-```
+## Setting Up a New Creatio Version
 
-### Out of memory
-Increase Docker Desktop memory allocation:
-- Docker Desktop → Settings → Resources → Memory → 8GB+
-
-## Updating Creatio
-
-⚠️ **Important**: Creatio updates in Docker require manual steps.
-
-1. Backup your database:
+1. **Create a new working folder**:
    ```bash
-   docker compose exec postgres pg_dump -U pg_sysadmin -Fc creatio_db > backup_$(date +%Y%m%d).backup
+   cp -r creatio-docker-template-mac creatio-docker-new
+   cd creatio-docker-new
    ```
 
-2. Download new Creatio version
-
-3. Replace files in `creatio-app/` (keep ConnectionStrings.config)
-
-4. Run the Creatio update utility (from Creatio distribution)
-
-5. Restart:
+2. **Extract the new Creatio distribution**:
    ```bash
-   docker compose down
-   docker compose build --no-cache creatio
-   docker compose up -d
+   unzip /path/to/Creatio_X.X.X_Linux_PostgreSQL_*.zip -d creatio-app/
+   ```
+
+3. **Apply required config changes**:
+   ```bash
+   # Cookie fix for HTTP development
+   sed -i '' 's/CookiesSameSiteMode" value="None"/CookiesSameSiteMode" value="Lax"/' creatio-app/Terrasoft.WebHost.dll.config
+   ```
+
+4. **Keep template files** (ConnectionStrings.config and Dockerfile are already in creatio-app/ from the template)
+
+5. **Start services**:
+   ```bash
+   docker compose up -d postgres redis
+   sleep 10
+   ./restore-db.sh creatio-app/db/*.backup
+   docker compose up -d creatio
    ```
 
 ## Network Configuration
@@ -214,6 +200,82 @@ All services communicate via Docker network `creatio-network`. Service names res
 - `redis` → Redis container
 - `creatio` → Creatio app container
 
+## Development with Clio and VS Code
+
+### Install Clio (Creatio CLI)
+
+```bash
+# Install .NET SDK (if not installed)
+brew install dotnet
+
+# Install Clio globally
+dotnet tool install clio -g
+
+# Add to PATH (add to ~/.zshrc for persistence)
+export PATH="$PATH:$HOME/.dotnet/tools"
+```
+
+### Register Your Creatio Instance
+
+```bash
+# Register local environment
+clio reg-web-app dev -u http://localhost:8080 -l Supervisor -p Supervisor
+
+# Set as default
+clio set-webservice dev
+
+# Test connection
+clio ping
+```
+
+### Development Workflow
+
+```bash
+# List all packages
+clio packages
+
+# Pull a package to edit locally
+clio pull-pkg UsrMyPackage -d ./src/UsrMyPackage
+
+# After making changes, push back to Creatio
+clio push-pkg ./src/UsrMyPackage
+
+# Compile (required for C# changes)
+clio compile
+
+# Restart Creatio (if needed)
+clio restart
+
+# Flush Redis cache
+clio flushdb
+```
+
+### VS Code Integration
+
+This template includes VS Code configuration files:
+
+- **`.vscode/settings.json`** - Editor settings for Creatio development
+- **`.vscode/extensions.json`** - Recommended extensions (C#, Docker, Git, etc.)
+- **`.vscode/tasks.json`** - Quick tasks for Clio commands
+- **`.vscode/launch.json`** - Debug configurations
+
+**To use VS Code tasks:**
+1. Open the project folder in VS Code
+2. Press `Cmd+Shift+P` → "Tasks: Run Task"
+3. Select a task (e.g., "Clio: Pull Package", "Clio: Push Package")
+
+### Folder Structure for Development
+
+```
+creatio-docker/
+├── src/                    # Your packages (pulled via Clio)
+│   ├── UsrMyPackage/
+│   └── UsrAnotherPackage/
+├── logs/                   # Creatio logs (mounted from container)
+├── .vscode/                # VS Code configuration
+└── ...
+```
+
 ## Production Notes
 
 This setup is for **development only**. For production:
@@ -222,6 +284,67 @@ This setup is for **development only**. For production:
 - Set up proper backup strategies
 - Consider managed PostgreSQL (AWS RDS, Azure, etc.)
 - Use Kubernetes or proper orchestration
+
+## Sharing with Team via GitHub Container Registry
+
+### Initial Setup (One-time, by admin)
+
+1. **Create a GitHub Personal Access Token**:
+   - Go to https://github.com/settings/tokens
+   - Click **"Generate new token (classic)"**
+   - Name: "Docker Registry"
+   - Select scopes: `write:packages`, `read:packages`, `delete:packages`
+   - Click **Generate token** and copy it
+
+2. **Login to GitHub Container Registry**:
+   ```bash
+   echo "YOUR_TOKEN" | docker login ghcr.io -u baskroes --password-stdin
+   ```
+
+3. **Tag and push the image**:
+   ```bash
+   # Tag the image
+   docker tag creatio-docker-creatio:latest ghcr.io/baskroes/creatio:8.3.2
+
+   # Push to registry
+   docker push ghcr.io/baskroes/creatio:8.3.2
+   ```
+
+4. **Set package visibility** (after first push):
+   - Go to https://github.com/baskroes?tab=packages
+   - Click on the `creatio` package
+   - Go to **Package settings** → Add collaborators or change visibility
+
+### For Team Members (Pulling the image)
+
+1. **Create a GitHub Personal Access Token** with `read:packages` scope
+
+2. **Login to registry**:
+   ```bash
+   echo "YOUR_TOKEN" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+   ```
+
+3. **Pull the image**:
+   ```bash
+   docker pull ghcr.io/baskroes/creatio:8.3.2
+   ```
+
+4. **Use the pre-built image** - update `docker-compose.yml`:
+   ```yaml
+   creatio:
+     image: ghcr.io/baskroes/creatio:8.3.2
+     # Comment out or remove the build section:
+     # build:
+     #   context: ./creatio-app
+     #   dockerfile: Dockerfile
+   ```
+
+5. **Start services**:
+   ```bash
+   docker compose up -d postgres redis
+   ./restore-db.sh creatio-app/db/*.backup
+   docker compose up -d creatio
+   ```
 
 ## Support
 
