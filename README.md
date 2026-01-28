@@ -1,53 +1,31 @@
-# Creatio 8.3.2 Docker Development Environment
+# Creatio Docker Development Environment
 
-Local development setup for Creatio 8.3.2 on Mac using Docker with PostgreSQL and Redis.
+Local development setup for Creatio using Docker with Redis and PostgreSQL.
 
 ## Prerequisites
 
-1. **Docker Desktop for Mac**
-   - Download: https://www.docker.com/products/docker-desktop/
-   - Allocate at least 8GB RAM to Docker (16GB recommended)
-   - Settings → Resources → Memory: 8GB+
+1. Download and Install Docker Desktop: https://www.docker.com/products/docker-desktop/
+2. Download Creatio Distribution Files for LINUX!!: https://architechts.sharepoint.com/:f:/s/Creatio/IgAQtnGXQsXUTa1DkcG4BZNTAWNWeiMYd9hW9gykC0FNgXM?e=NMHtfs 
 
-2. **Creatio 8.3.2 Distribution Files**
-   - Log into Creatio Partner Portal
-   - Download the Linux/.NET 8 version (NOT Windows/IIS)
-   - File pattern: `Creatio_*_Linux_PostgreSQL_*.zip`
+## Installation
 
-3. **Creatio License** (obtain from partner portal)
-
-## Quick Start
-
+### 1. Copy this template folder
 ```bash
-# 1. Copy this template folder
 cp -r creatio-docker-template-mac creatio-docker
 cd creatio-docker
-
-# 2. Extract Creatio distribution files into creatio-app/
-unzip /path/to/Creatio_8.3.2_Linux_PostgreSQL_*.zip -d creatio-app/
-
-# 3. Apply required config changes (IMPORTANT!)
-# Change cookie SameSite mode from "None" to "Lax" for HTTP development:
-sed -i '' 's/CookiesSameSiteMode" value="None"/CookiesSameSiteMode" value="Lax"/' creatio-app/Terrasoft.WebHost.dll.config
-
-# 4. Make scripts executable
-chmod +x setup.sh restore-db.sh
-
-# 5. Start PostgreSQL and Redis first
-docker compose up -d postgres redis
-
-# 6. Wait for services to be healthy, then restore database
-./restore-db.sh creatio-app/db/*.backup
-
-# 7. Start Creatio
-docker compose up -d creatio
 ```
 
-## Required Configuration Changes
+#### 2. Extract Creatio distribution files into creatio-app/
+```bash
+unzip /path/to/Creatio_8.3.2_Linux_PostgreSQL_*.zip -d creatio-app/
+```
 
-After extracting Creatio files, you MUST apply these changes:
-
-### 1. Cookie SameSite Mode (Required for HTTP)
+### 3. Apply required config changes (IMPORTANT!)
+#### a. Change cookie SameSite mode from "None" to "Lax" for HTTP development:
+```bash
+sed -i '' 's/CookiesSameSiteMode" value="None"/CookiesSameSiteMode" value="Lax"/' creatio-app/Terrasoft.WebHost.dll.config
+```
+##### b. Cookie SameSite Mode (Required for HTTP)
 In `creatio-app/Terrasoft.WebHost.dll.config`, change:
 ```xml
 <add key="CookiesSameSiteMode" value="None" />
@@ -56,11 +34,25 @@ To:
 ```xml
 <add key="CookiesSameSiteMode" value="Lax" />
 ```
-
 This is required because `SameSite=None` requires HTTPS. Without this change, you'll be able to log in but immediately redirected back to the login page.
-
-### 2. ConnectionStrings.config (Already configured)
+#### c. ConnectionStrings.config (Already configured)
 The template includes a pre-configured `ConnectionStrings.config` that uses Docker service names for PostgreSQL and Redis connections.
+### 4. Make scripts executable
+```bash
+chmod +x setup.sh restore-db.sh
+```
+### 5. Start PostgreSQL and Redis first
+```bash
+docker compose up -d postgres redis
+```
+#### 6. Wait for services to be healthy, then restore database
+```bash
+./restore-db.sh creatio-app/db/*.backup
+```
+#### 7. Start Creatio
+```bash
+docker compose up -d creatio
+```
 
 ## Folder Structure
 
@@ -128,6 +120,16 @@ docker compose exec redis redis-cli
 # Rebuild Creatio container (after Dockerfile changes)
 docker compose build --no-cache creatio
 docker compose up -d creatio
+
+# Create images out of current running containers (including DATA!)
+docker commit creatio-postgres ghcr.io/baskroes/creatio-postgres:8.3.2
+docker commit creatio-redis ghcr.io/baskroes/creatio-redis:8.3.2
+docker commit creatio-app ghcr.io/baskroes/creatio:8.3.2
+
+# Push containers to registry
+docker push ghcr.io/baskroes/creatio-postgres:8.3.2
+docker push ghcr.io/baskroes/creatio-redis:8.3.2
+docker push ghcr.io/baskroes/creatio:8.3.2
 ```
 
 ## Troubleshooting
